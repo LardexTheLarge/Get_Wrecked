@@ -13,6 +13,9 @@ pygame.display.set_caption("Get Wrecked")
 FPS = 60
 clock = pygame.time.Clock()
 
+#Game values
+BUFFER_DISTANCE = -100
+
 #Define classes
 class Game():
     #A class to help control and update gameplay, player, comet_group, bomb_group, player_bullet_group
@@ -121,11 +124,23 @@ class Bomb(pygame.sprite.Sprite):
     #A class to model a bomb colliding with the player and resetting the users progress
     
     #Initialize the player
-    def __init__(self):
+    def __init__(self, x, y, velocity):
+        #Initialize the bomb
         super().__init__()
+        self.image = pygame.image.load("bomb.png")
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+        self.velocity = velocity
 
     def update(self):
-        pass
+        #Update the bomb
+        if self.rect.y > WINDOW_HEIGHT:
+            self.rect.x = random.randint(64, WINDOW_WIDTH - 48)
+            self.rect.y = -100
+        else:
+            self.rect.y += self.velocity
 
 class PlayerBullet(pygame.sprite.Sprite):
     #A class to model a bullet fired by the player
@@ -159,11 +174,13 @@ my_player_group.add(my_player)
 
 #Create a comet group
 my_comet_group = pygame.sprite.Group()
-comet = Comet(random.randint(64, WINDOW_WIDTH - 48), -100, 3)
+comet = Comet(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 3)
 my_comet_group.add(comet)
 
 #Create a bomb group
 my_bomb_group = pygame.sprite.Group()
+bomb = Bomb(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 1)
+my_bomb_group.add(bomb)
 
 #Create a game object
 my_game = Game()
