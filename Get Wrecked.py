@@ -67,20 +67,36 @@ class Game():
         
         #See if any bullet in the player bullet group hits a comet in comet group
         comet_collide = pygame.sprite.groupcollide(self.player_bullet_group, self.comet_group, True, True)
-        if comet_collide:
-            self.comet_hit.play()
+        #See if any bullet in the player bullet group hits a bomb in bomb group
+        bomb_collide = pygame.sprite.groupcollide(self.player_bullet_group, self.bomb_group, True, True)
+        if bomb_collide or comet_collide:
+            self.player_hit.play()
+            for collide in bomb_collide:
+                bomb = Bomb(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 1)
+                my_bomb_group.add(bomb)
+            
             for collide in comet_collide:
                 comet = Comet(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 3)
                 my_comet_group.add(comet)
 
-
-        #See if any bullet in the player bullet group hits a bomb in bomb group
-        if pygame.sprite.groupcollide(self.player_bullet_group, self.bomb_group, True, True):
-            self.bomb_hit.play()
-
-        if pygame.sprite.spritecollide(self.player, self.comet_group, True):
-            self.player_hit.play()
+        #see if any comet collides with player and respawn comet
+        player_comet_collide = pygame.sprite.spritecollide(self.player, self.comet_group, True)
+        if player_comet_collide:
+            self.comet_hit.play()
             self.player.lives -= 1
+            for collide in player_comet_collide:
+                comet = Comet(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 3)
+                my_comet_group.add(comet)
+
+        #see if any bomb collides with player and respawn bomb
+        player_bomb_collide = pygame.sprite.spritecollide(self.player, self.bomb_group, True)
+        if player_bomb_collide:
+            self.bomb_hit.play()
+            #add complete reset when bomb collides with player
+
+            for collide in player_bomb_collide:
+                bomb = Bomb(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 1)
+                my_bomb_group.add(bomb)
 
     def check_round_completion(self):
         #Check to see if a player has completed a single round
@@ -163,7 +179,7 @@ class Comet(pygame.sprite.Sprite):
         #Update the comet
         if self.rect.y > WINDOW_HEIGHT:
             self.rect.x = random.randint(64, WINDOW_WIDTH - 48)
-            self.rect.y = 200
+            self.rect.y = BUFFER_DISTANCE
         else:
             self.rect.y += self.velocity
 
