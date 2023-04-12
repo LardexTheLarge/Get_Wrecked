@@ -18,22 +18,69 @@ BUFFER_DISTANCE = -100
 
 #Define classes
 class Game():
-    #A class to help control and update gameplay, player, comet_group, bomb_group, player_bullet_group
-    def __init__(self):
+    #A class to help control and update gameplay
+    def __init__(self, player, comet_group, bomb_group, player_bullet_group):
         #Initialize the game
-        pass
+        self.round_number = 1
+        
+        self.player = player
+        self.comet_group = comet_group
+        self.bomb_group = bomb_group
+        self.player_bullet_group = player_bullet_group
+
+        #Set sounds and music
+        self.comet_hit = pygame.mixer.Sound("comet_hit.wav")
+        self.bomb_hit = pygame.mixer.Sound("bomb.wav")
+        self.player_hit = pygame.mixer.Sound("player_hit.wav")
+
+        #Set font
+        self.font = pygame.font.Font("Blacknorth.otf", 32)
 
     def update(self):
         #Update the game
-        pass
+        self.check_collisions()
+        self.check_round_completion()
 
     def draw(self):
         #Draw the HUD and other information to display
-        pass
+        
+        #Set colors
+        WHITE = (255,255,255)
+
+        round_text = self.font.render("Round: " + str(self.round_number), True, WHITE)
+        round_rect = round_text.get_rect()
+        round_rect.topleft = (20, 10)
+
+        lives_text = self.font.render("Lives: " + str(self.player.lives), True, WHITE)
+        lives_rect = lives_text.get_rect()
+        lives_rect.topright = (WINDOW_WIDTH - 20, 10)
+
+        #Blit HUD to the display
+        display_surface.blit(round_text, round_rect)
+        display_surface.blit(lives_text, lives_rect)
+        pygame.draw.line(display_surface, WHITE, (0, 65), (WINDOW_WIDTH, 65), 4)
+        pygame.draw.line(display_surface, WHITE, (0, WINDOW_HEIGHT - 70), (WINDOW_WIDTH, WINDOW_HEIGHT - 70), 4)
+        pygame.draw.rect(display_surface, WHITE, (WINDOW_WIDTH//2 - 100, 6, 200, 52))
 
     def check_collisions(self):
         #check for collisions
-        pass
+        
+        #See if any bullet in the player bullet group hits a comet in comet group
+        comet_collide = pygame.sprite.groupcollide(self.player_bullet_group, self.comet_group, True, True)
+        if comet_collide:
+            self.comet_hit.play()
+            for collide in comet_collide:
+                comet = Comet(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 3)
+                my_comet_group.add(comet)
+
+
+        #See if any bullet in the player bullet group hits a bomb in bomb group
+        if pygame.sprite.groupcollide(self.player_bullet_group, self.bomb_group, True, True):
+            self.bomb_hit.play()
+
+        if pygame.sprite.spritecollide(self.player, self.comet_group, True):
+            self.player_hit.play()
+            self.player.lives -= 1
 
     def check_round_completion(self):
         #Check to see if a player has completed a single round
@@ -105,7 +152,7 @@ class Comet(pygame.sprite.Sprite):
     def __init__(self, x, y, velocity):
         #Initialize the comet
         super().__init__()
-        self.image = pygame.image.load("rock.png")
+        self.image = pygame.image.load("comet.png")
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -116,7 +163,7 @@ class Comet(pygame.sprite.Sprite):
         #Update the comet
         if self.rect.y > WINDOW_HEIGHT:
             self.rect.x = random.randint(64, WINDOW_WIDTH - 48)
-            self.rect.y = -100
+            self.rect.y = 200
         else:
             self.rect.y += self.velocity
 
@@ -138,7 +185,7 @@ class Bomb(pygame.sprite.Sprite):
         #Update the bomb
         if self.rect.y > WINDOW_HEIGHT:
             self.rect.x = random.randint(64, WINDOW_WIDTH - 48)
-            self.rect.y = -100
+            self.rect.y = BUFFER_DISTANCE
         else:
             self.rect.y += self.velocity
 
@@ -183,11 +230,7 @@ bomb = Bomb(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 1)
 my_bomb_group.add(bomb)
 
 #Create a game object
-my_game = Game()
-my_game.start_new_round()
-
-#Create a game object
-my_game = Game()
+my_game = Game(my_player, my_comet_group, my_bomb_group, my_player_bullet_group)
 my_game.start_new_round()
 
 #The main game loop
