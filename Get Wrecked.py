@@ -14,24 +14,44 @@ FPS = 60
 clock = pygame.time.Clock()
 
 #Game values
-BUFFER_DISTANCE = -100
+BUFFER_DISTANCE = random.choice([-100, -200, -300])
+
+BD = random.choice([-100, -200, -300])
+
+#Set colors
+WHITE = (255,255,255)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+cargo_color = random.choice(["white", "yellow", "purple"])
 
 #Define classes
 class Game():
     #A class to help control and update gameplay
-    def __init__(self, player, comet_group, bomb_group, player_bullet_group):
+    def __init__(self, player, comet_group, bomb_group, player_bullet_group, cargo_group, red_cargo_group, blue_cargo_group):
         #Initialize the game
         self.round_number = 1
+        self.target_color = 5
+        self.total_cargo_red = 0
+        self.total_cargo_blue = 0
         
         self.player = player
         self.comet_group = comet_group
         self.bomb_group = bomb_group
         self.player_bullet_group = player_bullet_group
+        self.cargo_group = cargo_group
+        self.red_cargo_group = red_cargo_group
+        self.blue_cargo_group = blue_cargo_group
 
         #Set sounds and music
         self.comet_hit = pygame.mixer.Sound("comet_hit.wav")
         self.bomb_hit = pygame.mixer.Sound("bomb.wav")
         self.player_hit = pygame.mixer.Sound("player_hit.wav")
+        self.cargo_pickup = pygame.mixer.Sound("cargo_pickup.wav")
+
+        self.cargo_pickup.set_volume(.1)
+        self.comet_hit.set_volume(.1)
+        self.bomb_hit.set_volume(.1)
+        self.player_hit.set_volume(.1)
 
         #Set font
         self.font = pygame.font.Font("Blacknorth.otf", 32)
@@ -43,10 +63,6 @@ class Game():
 
     def draw(self):
         #Draw the HUD and other information to display
-        
-        #Set colors
-        WHITE = (255,255,255)
-
         round_text = self.font.render("Round: " + str(self.round_number), True, WHITE)
         round_rect = round_text.get_rect()
         round_rect.topleft = (20, 10)
@@ -55,12 +71,25 @@ class Game():
         lives_rect = lives_text.get_rect()
         lives_rect.topright = (WINDOW_WIDTH - 20, 10)
 
+        red_cargo_text = self.font.render(str(self.total_cargo_red) + " x " + str(self.target_color), True, WHITE)
+        red_cargo_rect = red_cargo_text.get_rect()
+        red_cargo_rect.center = (WINDOW_WIDTH//2 + 40, 35)
+
+        blue_cargo_text = self.font.render(str(self.total_cargo_blue) + " x " + str(self.target_color), True, WHITE)
+        blue_cargo_rect = blue_cargo_text.get_rect()
+        blue_cargo_rect.center = (WINDOW_WIDTH//2 - 60, 35)
+
         #Blit HUD to the display
         display_surface.blit(round_text, round_rect)
         display_surface.blit(lives_text, lives_rect)
         pygame.draw.line(display_surface, WHITE, (0, 65), (WINDOW_WIDTH, 65), 4)
         pygame.draw.line(display_surface, WHITE, (0, WINDOW_HEIGHT - 70), (WINDOW_WIDTH, WINDOW_HEIGHT - 70), 4)
-        pygame.draw.rect(display_surface, WHITE, (WINDOW_WIDTH//2 - 100, 6, 200, 52))
+        
+        pygame.draw.rect(display_surface, BLUE, (WINDOW_WIDTH//2 - 100, 6, 50, 50))
+        display_surface.blit(blue_cargo_text, blue_cargo_rect)
+
+        pygame.draw.rect(display_surface, RED, (WINDOW_WIDTH//2, 6, 50, 50))
+        display_surface.blit(red_cargo_text, red_cargo_rect)
 
     def check_collisions(self):
         #check for collisions
@@ -88,6 +117,8 @@ class Game():
                 comet = Comet(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 3)
                 my_comet_group.add(comet)
 
+            self.check_game_status("You've been hit", "Press 'ENTER' to continue")
+
         #see if any bomb collides with player and respawn bomb
         player_bomb_collide = pygame.sprite.spritecollide(self.player, self.bomb_group, True)
         if player_bomb_collide:
@@ -98,25 +129,134 @@ class Game():
                 bomb = Bomb(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 1)
                 my_bomb_group.add(bomb)
 
+            self.check_game_status("You've been hit", "Press 'ENTER' to continue")
+
+        #See if different colored cargo collides with the players rect and holds the cargo
+        player_cargo_collide = pygame.sprite.spritecollide(self.player, self.cargo_group, True)
+        if player_cargo_collide:
+            self.cargo_pickup.play()
+            self.player.velocity -= .5
+
+            for collide in player_cargo_collide:
+                cargo = Cargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, cargo_color)
+                my_cargo_group.add(cargo)
+
+        #see if red cargo collides with the player rect and adds to the red cargo counter
+        player_red_cargo_collide = pygame.sprite.spritecollide(self.player, self.red_cargo_group, True)
+        if player_red_cargo_collide:
+            self.cargo_pickup.play()
+            self.total_cargo_red += 1
+            self.player.velocity -= .5
+
+            for collide in player_red_cargo_collide:
+                red_cargo = RedCargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE)
+                my_red_cargo_group.add(red_cargo)
+
+        #see if blue cargo collides with the player rect and adds to the blue cargo counter
+        player_blue_cargo_collide = pygame.sprite.spritecollide(self.player, self.blue_cargo_group, True)
+        if player_blue_cargo_collide:
+            self.cargo_pickup.play()
+            self.total_cargo_blue += 1
+            self.player.velocity -= .5
+
+            for collide in player_blue_cargo_collide:
+                blue_cargo = BlueCargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE)
+                my_blue_cargo_group.add(blue_cargo)
+
     def check_round_completion(self):
         #Check to see if a player has completed a single round
-        pass
+        if (self.total_cargo_red == 5 and self.total_cargo_blue == 5):
+            self.round_number += 1
+
+            self.start_new_round()
 
     def start_new_round(self):
         #Start a new round
-        pass
+
+        #Create all comet, bomb, and cargo
+        comet = Comet(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 3)
+        self.comet_group.add(comet)
+
+        bomb = Bomb(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 1)
+        self.bomb_group.add(bomb)
+
+        cargo = Cargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, cargo_color)
+        self.cargo_group.add(cargo)
+
+        red_cargo = RedCargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE)
+        self.red_cargo_group.add(red_cargo)
+
+        blue_cargo = BlueCargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE)
+        self.blue_cargo_group.add(blue_cargo)
+
+        #Pause the game and prompt the user to start
+        self.pause_game("Get Wrecked Round " + str(self.round_number), "Press 'ENTER' to begin")
     
     def check_game_status(self, main_text, sub_text):
         #Check to see the status of the game and how the player died
-        pass
+        self.player_bullet_group.empty()
+        self.player.reset()
+
+        #Check if the game is over or a simple round reset
+        if self.player.lives == 0:
+            self.reset_game()
+        else:
+            self.pause_game(main_text, sub_text)
 
     def pause_game(self, main_text, sub_text):
         #pause the game
-        pass
+        global running
+
+        #Create main pause text
+        main_text = self.font.render(main_text, True, WHITE)
+        main_rect = main_text.get_rect()
+        main_rect.center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2)
+
+        #Create sub pause text
+        sub_text = self.font.render(sub_text, True, WHITE)
+        sub_rect = sub_text.get_rect()
+        sub_rect.center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 64)
+
+        #Blit the pause text
+        display_surface.fill ((0,0,100))
+        display_surface.blit(main_text, main_rect)
+        display_surface.blit(sub_text, sub_rect)
+        pygame.display.update()
+
+        is_paused = True
+        while is_paused:
+            for event in pygame.event.get():
+                #The user wants to play again
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        is_paused = False
+                #The user wants to quit
+                if event.type == pygame.QUIT:
+                    is_paused = False
+                    running = False
 
     def reset_game(self):
         #Reset the game
-        pass
+        self.pause_game("Final Results: " + str(self.round_number), "Press 'ENTER' to play again")
+
+        #Reset game values
+        self.round_number = 1
+        self.total_cargo_blue = 0
+        self.total_cargo_red = 0
+
+        self.player.lives = 5
+        self.player.velocity = 8
+
+        #Empty groups
+        self.bomb_group.empty()
+        self.comet_group.empty()
+        self.cargo_group.empty()
+        self.red_cargo_group.empty()
+        self.blue_cargo_group.empty()
+        self.player_bullet_group.empty()
+
+        #Start a new game
+        self.start_new_round()
 
 class Player(pygame.sprite.Sprite):
     #A class to model the spaceship the user can control
@@ -227,6 +367,77 @@ class PlayerBullet(pygame.sprite.Sprite):
         if self.rect.bottom < 0:
             self.kill()
 
+class RedCargo(pygame.sprite.Sprite):
+    #A class to model a color for the ship to catch in insert into the players rect
+
+    def __init__(self, x, y):
+    #     Initialize the Square
+        super().__init__()
+        self.BUFFER_DISTANCE = random.choice([-100, -200, -300])
+        self.image = pygame.image.load("red_sqr.png")
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+        self.velocity = 5
+        
+    def update(self):
+        #Update the cargo
+        if self.rect.y > WINDOW_HEIGHT:
+            self.kill()
+            red_cargo = RedCargo(random.randint(64, WINDOW_WIDTH - 48), self.BUFFER_DISTANCE)
+            my_red_cargo_group.add(red_cargo)
+        else:
+            self.rect.y += self.velocity
+
+class BlueCargo(pygame.sprite.Sprite):
+    #A class to model a color for the ship to catch in insert into the players rect
+
+    def __init__(self, x, y):
+    #     Initialize the Square
+        super().__init__()
+        self.BUFFER_DISTANCE = random.choice([-100, -200, -300])
+        self.image = pygame.image.load("blue_sqr.png")
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+        self.velocity = 5
+        
+    def update(self):
+        #Update the cargo
+        if self.rect.y > WINDOW_HEIGHT:
+            self.kill()
+            blue_cargo = BlueCargo(random.randint(64, WINDOW_WIDTH - 48), self.BUFFER_DISTANCE)
+            my_blue_cargo_group.add(blue_cargo)
+        else:
+            self.rect.y += self.velocity
+
+class Cargo(pygame.sprite.Sprite):
+    #A class to model a color for the ship to catch in insert into the players rect
+
+    def __init__(self, x, y, color):
+    #     Initialize the Square
+        super().__init__()
+        self.BUFFER_DISTANCE = random.choice([-100, -200, -300])
+        self.cargo_color = random.choice(["white", "yellow", "purple"])
+        self.image = pygame.image.load(str(self.cargo_color) + "_sqr.png")
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+        self.velocity = 5
+        
+    def update(self):
+        #Update the cargo
+        if self.rect.y > WINDOW_HEIGHT:
+            self.kill()
+            cargo = Cargo(random.randint(64, WINDOW_WIDTH - 48), self.BUFFER_DISTANCE, self.cargo_color)
+            my_cargo_group.add(cargo)
+        else:
+            self.rect.y += self.velocity
+
+
 #Create bullet group
 my_player_bullet_group = pygame.sprite.Group()
 
@@ -234,6 +445,19 @@ my_player_bullet_group = pygame.sprite.Group()
 my_player_group = pygame.sprite.Group()
 my_player = Player(my_player_bullet_group)
 my_player_group.add(my_player)
+
+#Create players cargo
+my_cargo_group = pygame.sprite.Group()
+my_cargo = Cargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, cargo_color)
+my_cargo_group.add(my_cargo)
+
+my_red_cargo_group = pygame.sprite.Group()
+my_red_cargo = RedCargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE)
+my_red_cargo_group.add(my_red_cargo)
+
+my_blue_cargo_group = pygame.sprite.Group()
+my_blue_cargo = BlueCargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE)
+my_blue_cargo_group.add(my_blue_cargo)
 
 #Create a comet group
 my_comet_group = pygame.sprite.Group()
@@ -246,8 +470,8 @@ bomb = Bomb(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 1)
 my_bomb_group.add(bomb)
 
 #Create a game object
-my_game = Game(my_player, my_comet_group, my_bomb_group, my_player_bullet_group)
-my_game.start_new_round()
+my_game = Game(my_player, my_comet_group, my_bomb_group, my_player_bullet_group, my_cargo_group, my_red_cargo_group, my_blue_cargo_group)
+# my_game.start_new_round()
 
 #The main game loop
 running = True
@@ -269,14 +493,23 @@ while running:
     my_player_group.update()
     my_player_group.draw(display_surface)
 
-    my_comet_group.update()
-    my_comet_group.draw(display_surface)
+    my_cargo_group.update()
+    my_cargo_group.draw(display_surface)
+
+    my_red_cargo_group.update()
+    my_red_cargo_group.draw(display_surface)
+
+    my_blue_cargo_group.update()
+    my_blue_cargo_group.draw(display_surface)
 
     my_bomb_group.update()
     my_bomb_group.draw(display_surface)
 
     my_player_bullet_group.update()
     my_player_bullet_group.draw(display_surface)
+
+    my_comet_group.update()
+    my_comet_group.draw(display_surface)
 
     #Update and draw game object
     my_game.update()
