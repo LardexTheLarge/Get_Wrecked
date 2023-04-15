@@ -113,23 +113,31 @@ class Game():
         if player_comet_collide:
             self.comet_hit.play()
             self.player.lives -= 1
+            self.total_cargo_blue -= 1
+            self.total_cargo_red -= 1
+            self.player.velocity += 1
+
             for collide in player_comet_collide:
                 comet = Comet(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 3)
                 my_comet_group.add(comet)
 
-            self.check_game_status("You've been hit", "Press 'ENTER' to continue")
+            self.check_game_status("You've been hit, lost 2 cargo", "Press 'ENTER' to continue")
 
         #see if any bomb collides with player and respawn bomb
         player_bomb_collide = pygame.sprite.spritecollide(self.player, self.bomb_group, True)
         if player_bomb_collide:
             self.bomb_hit.play()
             #add complete reset when bomb collides with player
+            self.total_cargo_blue = 0
+            self.total_cargo_red = 0
+
+            self.player.velocity = 8
 
             for collide in player_bomb_collide:
                 bomb = Bomb(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 1)
                 my_bomb_group.add(bomb)
 
-            self.check_game_status("You've been hit", "Press 'ENTER' to continue")
+            self.check_game_status("You've been hit, lost all cargo", "Press 'ENTER' to continue")
 
         #See if different colored cargo collides with the players rect and holds the cargo
         player_cargo_collide = pygame.sprite.spritecollide(self.player, self.cargo_group, True)
@@ -471,7 +479,6 @@ my_bomb_group.add(bomb)
 
 #Create a game object
 my_game = Game(my_player, my_comet_group, my_bomb_group, my_player_bullet_group, my_cargo_group, my_red_cargo_group, my_blue_cargo_group)
-# my_game.start_new_round()
 
 #The main game loop
 running = True
