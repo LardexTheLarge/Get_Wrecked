@@ -143,7 +143,9 @@ class Game():
         player_cargo_collide = pygame.sprite.spritecollide(self.player, self.cargo_group, True)
         if player_cargo_collide:
             self.cargo_pickup.play()
-            self.player.velocity -= .5
+
+            if self.player.velocity > .5:
+                self.player.velocity -= .5
 
             for collide in player_cargo_collide:
                 cargo = Cargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, cargo_color)
@@ -154,7 +156,9 @@ class Game():
         if player_red_cargo_collide:
             self.cargo_pickup.play()
             self.total_cargo_red += 1
-            self.player.velocity -= .5
+
+            if self.player.velocity > .5:
+                self.player.velocity -= .5
 
             for collide in player_red_cargo_collide:
                 red_cargo = RedCargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE)
@@ -165,7 +169,9 @@ class Game():
         if player_blue_cargo_collide:
             self.cargo_pickup.play()
             self.total_cargo_blue += 1
-            self.player.velocity -= .5
+
+            if self.player.velocity > .5:
+                self.player.velocity -= .5
 
             for collide in player_blue_cargo_collide:
                 blue_cargo = BlueCargo(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE)
@@ -180,7 +186,9 @@ class Game():
 
     def start_new_round(self):
         #Start a new round
-
+        self.total_cargo_red = 0
+        self.total_cargo_blue = 0
+        self.player.velocity = 8
         #Create all comet, bomb, and cargo
         comet = Comet(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 3)
         self.comet_group.add(comet)
@@ -293,9 +301,9 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.rect(display_surface, (255,255,255), self.rect, 1)
 
         #move the player within the bounds of the screen
-        if keys[pygame.K_a] and self.rect.left > 10:
+        if (keys[pygame.K_a] or keys[pygame.K_LEFT]) and self.rect.left > 10:
             self.rect.x -= self.velocity
-        if keys[pygame.K_d] and self.rect.right < WINDOW_WIDTH - 10:
+        if (keys[pygame.K_d] or keys[pygame.K_RIGHT]) and self.rect.right < WINDOW_WIDTH - 10:
             self.rect.x += self.velocity
 
     def fire(self):
