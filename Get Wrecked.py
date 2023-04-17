@@ -179,7 +179,7 @@ class Game():
 
     def check_round_completion(self):
         #Check to see if a player has completed a single round
-        if (self.total_cargo_red == 5 and self.total_cargo_blue == 5):
+        if (self.total_cargo_red == self.target_color and self.total_cargo_blue == self.target_color):
             self.round_number += 1
 
             self.start_new_round()
@@ -189,6 +189,15 @@ class Game():
         self.total_cargo_red = 0
         self.total_cargo_blue = 0
         self.player.velocity = 8
+
+        #Empty groups
+        self.bomb_group.empty()
+        self.comet_group.empty()
+        self.cargo_group.empty()
+        self.red_cargo_group.empty()
+        self.blue_cargo_group.empty()
+        self.player_bullet_group.empty()
+
         #Create all comet, bomb, and cargo
         comet = Comet(random.randint(64, WINDOW_WIDTH - 48), BUFFER_DISTANCE, 3)
         self.comet_group.add(comet)
@@ -206,7 +215,8 @@ class Game():
         self.blue_cargo_group.add(blue_cargo)
 
         #Pause the game and prompt the user to start
-        self.pause_game("Get Wrecked Round " + str(self.round_number), "Press 'ENTER' to begin")
+        self.pause_game("Get Wrecked Round " + str(self.round_number), "Press 'ENTER' to begin or 'I' for How-To-Play")
+        self.how_to_play()
     
     def check_game_status(self, main_text, sub_text):
         #Check to see the status of the game and how the player died
@@ -242,15 +252,19 @@ class Game():
         is_paused = True
         while is_paused:
             for event in pygame.event.get():
-                #The user wants to play again
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        is_paused = False
                 #The user wants to quit
                 if event.type == pygame.QUIT:
                     is_paused = False
                     running = False
-
+                #The user wants to play again
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        is_paused = False
+                #The user wants to view the instructions
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_i:
+                        is_paused = False
+                
     def reset_game(self):
         #Reset the game
         self.pause_game("Final Results: " + str(self.round_number), "Press 'ENTER' to play again")
@@ -273,6 +287,10 @@ class Game():
 
         #Start a new game
         self.start_new_round()
+
+    def how_to_play(self):
+        #Tells the user how to play the game
+        self.pause_game("Collect cargo, shoot comets and bombs, they will cause you to lose cargo", "Collect to much cargo and your ship will slow down. Press 'ENTER' to play")
 
 class Player(pygame.sprite.Sprite):
     #A class to model the spaceship the user can control
@@ -487,6 +505,7 @@ my_bomb_group.add(bomb)
 
 #Create a game object
 my_game = Game(my_player, my_comet_group, my_bomb_group, my_player_bullet_group, my_cargo_group, my_red_cargo_group, my_blue_cargo_group)
+my_game.start_new_round()
 
 #The main game loop
 running = True
