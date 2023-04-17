@@ -215,8 +215,7 @@ class Game():
         self.blue_cargo_group.add(blue_cargo)
 
         #Pause the game and prompt the user to start
-        self.pause_game("Get Wrecked Round " + str(self.round_number), "Press 'ENTER' to begin or 'I' for How-To-Play")
-        self.how_to_play()
+        self.pause_game("Round " + str(self.round_number), "Press 'ENTER' to begin or 'I' for How-To-Play")
     
     def check_game_status(self, main_text, sub_text):
         #Check to see the status of the game and how the player died
@@ -233,6 +232,11 @@ class Game():
         #pause the game
         global running
 
+        #Create title page text
+        title = self.font.render("GET WRECKED", True, WHITE, RED)
+        title_rect = title.get_rect()
+        title_rect.center = (WINDOW_WIDTH//2, 100)
+
         #Create main pause text
         main_text = self.font.render(main_text, True, WHITE)
         main_rect = main_text.get_rect()
@@ -245,6 +249,7 @@ class Game():
 
         #Blit the pause text
         display_surface.fill ((0,0,100))
+        display_surface.blit(title, title_rect)
         display_surface.blit(main_text, main_rect)
         display_surface.blit(sub_text, sub_rect)
         pygame.display.update()
@@ -260,9 +265,10 @@ class Game():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
                         is_paused = False
-                #The user wants to view the instructions
+                # The user wants to view the instructions
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_i:
+                        self.how_to_play("Collect cargo, shoot comets and bombs, they will cause you to lose cargo", "Collect to much cargo and your ship will slow down. Press 'ENTER' to play")
                         is_paused = False
                 
     def reset_game(self):
@@ -288,9 +294,49 @@ class Game():
         #Start a new game
         self.start_new_round()
 
-    def how_to_play(self):
+    def how_to_play(self, main_text, sub_text):
         #Tells the user how to play the game
-        self.pause_game("Collect cargo, shoot comets and bombs, they will cause you to lose cargo", "Collect to much cargo and your ship will slow down. Press 'ENTER' to play")
+        global running
+
+        #Create title page text
+        title = self.font.render("How-To-Play", True, WHITE, RED)
+        title_rect = title.get_rect()
+        title_rect.center = (WINDOW_WIDTH//2, 100)
+
+        #Create main how to play text
+        main_text = self.font.render(main_text, True, WHITE)
+        main_rect = title.get_rect()
+        main_rect.center = (WINDOW_WIDTH//2 - 445, WINDOW_HEIGHT//2)
+
+        #Create sub how to play text text
+        sub_text = self.font.render(sub_text, True, WHITE)
+        sub_rect = sub_text.get_rect()
+        sub_rect.center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 64)
+
+        #Create controls text
+        control_text = self.font.render("-A: Left   -D: Right   -Space: Shoot", True, WHITE, RED)
+        control_rect = control_text.get_rect()
+        control_rect.center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 128)
+
+        #Blit the pause text
+        display_surface.fill ((0,0,100))
+        display_surface.blit(title, title_rect)
+        display_surface.blit(main_text, main_rect)
+        display_surface.blit(sub_text, sub_rect)
+        display_surface.blit(control_text, control_rect)
+        pygame.display.update()
+
+        is_paused = True
+        while is_paused:
+            for event in pygame.event.get():
+                #The user wants to quit
+                if event.type == pygame.QUIT:
+                    is_paused = False
+                    running = False
+                #The user wants to play again
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        is_paused = False
 
 class Player(pygame.sprite.Sprite):
     #A class to model the spaceship the user can control
